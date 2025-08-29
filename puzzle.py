@@ -29,6 +29,16 @@ class Cell:
         self.x_pos_abs: int | None = None
         self.y_pos_abs: int | None = None
 
+    def remove_possible_value(self, val: int):
+        '''
+        Remove a possible value from the cell's possible values.
+
+        Args:
+            val (int): The value to remove.
+        '''
+        if val in self.possible_values:
+            self.possible_values.remove(val)
+
 class Box:
     def __init__(self, id: int, cells: list[Cell]):
         '''
@@ -41,6 +51,16 @@ class Box:
         self.id = id
         self.cells = cells
         self.is_sat = False
+
+    def is_satisfied(self) -> bool:
+        '''
+        Check if the box is satisfied (contains all numbers 1-9).
+
+        Returns:
+            bool: True if the box is satisfied, False otherwise.
+        '''
+        values = {cell.value for cell in self.cells if cell.value != 0}
+        return values == set(range(1, 10))
 
 
 class Row: 
@@ -56,6 +76,16 @@ class Row:
         self.cells = cells
         self.is_sat = False
 
+    def is_satisfied(self) -> bool:
+        '''
+        Check if the row is satisfied (contains all numbers 1-9).
+
+        Returns:
+            bool: True if the row is satisfied, False otherwise.
+        '''
+        values = {cell.value for cell in self.cells if cell.value != 0}
+        return values == set(range(1, 10))
+
 class Column:
     def __init__(self, id: int, cells: list[Cell]):
         '''
@@ -68,6 +98,16 @@ class Column:
         self.id = id
         self.cells = cells
         self.is_sat = False
+
+    def is_satisfied(self) -> bool:
+        '''
+        Check if the column is satisfied (contains all numbers 1-9).
+
+        Returns:
+            bool: True if the column is satisfied, False otherwise.
+        '''
+        values = {cell.value for cell in self.cells if cell.value != 0}
+        return values == set(range(1, 10))
 
 class Puzzle:
     def __init__(self, grid: list[list[int]]):
@@ -82,6 +122,7 @@ class Puzzle:
         self.boxes = [Box(id=i, cells=[]) for i in range(9)]
         self.rows = [Row(id=i, cells=[]) for i in range(9)]
         self.columns = [Column(id=i, cells=[]) for i in range(9)]
+        self.solved = False
 
         # Assign cells to boxes, rows, and columns
         for row in range(9):
@@ -93,8 +134,8 @@ class Puzzle:
                 self.columns[col].cells.append(cell)
 
                 # Set cell positions (stored as row, column for consistency with display)
-                cell.x_pos_rel = col % 3  # relative column within box
-                cell.y_pos_rel = row % 3  # relative row within box
+                cell.x_pos_rel = row % 3  # relative column within box
+                cell.y_pos_rel = col % 3  # relative row within box
                 cell.x_pos_abs = row      # absolute row (for get_cell x parameter)
                 cell.y_pos_abs = col      # absolute column (for get_cell y parameter)
 
@@ -122,7 +163,7 @@ class Puzzle:
         Returns:
             int: The box ID (1-9).
         '''
-        return (x // 3) * 3 + (y // 3) + 1
+        return (x // 3) * 3 + (y // 3) 
     
     def get_row_id(self, x: int, y: int) -> int:
         '''
@@ -135,7 +176,7 @@ class Puzzle:
         Returns:
             int: The row ID (1-9).
         '''
-        return x + 1
+        return x
     
     def get_column_id(self, x: int, y: int) -> int:
         '''
@@ -148,7 +189,20 @@ class Puzzle:
         Returns:
             int: The column ID (1-9).
         '''
-        return y + 1
+        return y
+    
+    def is_solved(self) -> bool:
+        '''
+        Check if the puzzle is solved (all boxes, rows, and columns are satisfied).
+
+        Returns:
+            bool: True if the puzzle is solved, False otherwise.
+        '''
+        boxes_satisfied = all(box.is_satisfied() for box in self.boxes)
+        rows_satisfied = all(row.is_satisfied() for row in self.rows)
+        columns_satisfied = all(column.is_satisfied() for column in self.columns)
+        self.solved = boxes_satisfied and rows_satisfied and columns_satisfied
+        return self.solved
 
     def display(self):
         '''
