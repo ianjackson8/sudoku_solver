@@ -12,56 +12,126 @@ Version 0.1
 import puzzle
 import solver
 import time
+import os
+import argparse
 
 #== Global Variables ==#
 
 
 #== Functions ==#
+def setup_argument_parser():
+    """
+    Set up command line argument parser.
+    
+    Returns:
+        argparse.ArgumentParser: Configured argument parser
+    """
+    parser = argparse.ArgumentParser(
+        description='Sudoku Solver - Solve Sudoku puzzles from text files',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog='''
+Examples:
+  python main.py -i easy_000.txt
+  python main.py --input hard_000.txt
+  python main.py -i puzzles/easy_000.txt
+  python main.py  # Uses default easy puzzle
+
+Puzzle file format:
+  - 9 lines of 9 digits each
+  - 0 represents empty cells
+  - Blank lines are ignored
+        '''
+    )
+    
+    parser.add_argument(
+        '-i', '--input',
+        type=str,
+        help='Input puzzle file (e.g., easy_000.txt). If only filename is provided, looks in puzzles/ directory.'
+    )
+    
+    return parser
+
+def load_puzzle_from_file(filepath):
+    """
+    Load a Sudoku puzzle from a text file.
+    
+    Expected format:
+    - 9 lines of 9 digits each (0 for empty cells)
+    - Blank lines are ignored
+    - Each line represents a row in the Sudoku grid
+    
+    Args:
+        filepath (str): Path to the puzzle file
+        
+    Returns:
+        List[List[int]]: 9x9 grid representing the puzzle
+    """
+    grid = []
+    
+    try:
+        with open(filepath, 'r') as file:
+            for line in file:
+                line = line.strip()
+                # Skip empty lines
+                if not line:
+                    continue
+                
+                # Convert line to list of integers
+                if len(line) == 9 and line.isdigit():
+                    row = [int(digit) for digit in line]
+                    grid.append(row)
+                else:
+                    raise ValueError(f"Invalid line format: '{line}'. Expected 9 digits.")
+        
+        # Validate grid size
+        if len(grid) != 9:
+            raise ValueError(f"Invalid grid size: {len(grid)} rows. Expected 9 rows.")
+            
+        return grid
+        
+    except FileNotFoundError:
+        print(f"❌ Error: Puzzle file '{filepath}' not found.")
+        return None
+    except Exception as e:
+        print(f"❌ Error loading puzzle: {e}")
+        return None
 
 
 #== Main Code ==#
 def main():
-    grid_easy = [[0,1,0, 0,8,6, 0,3,2],
-                [0,2,0, 0,0,9, 6,5,0],
-                [6,0,3, 0,0,0, 9,1,0],
-
-                [0,0,1, 5,4,3, 2,0,6],
-                [0,4,0, 0,2,0, 0,8,1],
-                [2,5,0, 1,0,0, 0,0,0],
-
-                [7,0,0, 0,0,5, 0,0,0],
-                [1,0,0, 0,7,0, 8,6,5],
-                [0,9,8, 0,0,1, 3,0,4]]
+    # Set up command line argument parsing
+    parser = setup_argument_parser()
+    args = parser.parse_args()
     
-    grid_nsol = [[1,1,0, 0,8,6, 0,3,2],
-                [0,2,0, 0,0,9, 6,5,0],
-                [6,0,3, 0,0,0, 9,1,0],
-
-                [0,0,1, 5,4,3, 2,0,6],
-                [0,4,0, 0,2,0, 0,8,1],
-                [2,5,0, 1,0,0, 0,0,0],
-
-                [7,0,0, 0,0,5, 0,0,0],
-                [1,0,0, 0,7,0, 8,6,5],
-                [0,9,8, 0,0,1, 3,0,4]]
+    # Determine puzzle file to load
+    if args.input:
+        # Check if the input is just a filename or a full path
+        if os.path.dirname(args.input):
+            # Full path provided
+            puzzle_file = args.input
+        else:
+            # Just filename provided, look in puzzles directory
+            puzzle_file = os.path.join('puzzles', args.input)
+        
+        # Extract puzzle name from filename for display
+        puzzle_name = os.path.splitext(os.path.basename(args.input))[0]
+    else:
+        # Default puzzle if no input specified
+        puzzle_file = 'puzzles/easy_000.txt'
+        puzzle_name = 'easy_000 (default)'
     
-    grid_hard = [[0,0,0, 0,0,0, 0,1,0],
-                [4,0,0, 0,0,0, 0,0,0],
-                [0,2,0, 0,0,0, 0,0,0],
-
-                [0,0,0, 0,5,0, 4,0,7],
-                [0,0,8, 0,0,0, 3,0,0],
-                [0,0,1, 0,9,0, 0,0,0],
-
-                [3,0,0, 4,0,0, 2,0,0],
-                [0,5,0, 1,0,0, 0,0,0],
-                [0,0,0, 8,0,6, 0,0,0]]
+    print(f"🎯 Loading puzzle from file: {puzzle_file}")
+    grid = load_puzzle_from_file(puzzle_file)
     
-    grid = grid_easy
+    if grid is None:
+        print("❌ Failed to load puzzle. Exiting.")
+        return
+    
+    print(f"✅ Successfully loaded puzzle: {puzzle_name}")
     puz = puzzle.Puzzle(grid)
     
     # Display the initial puzzle
-    print("📋 INITIAL SUDOKU PUZZLE:")
+    print(f"\n📋 INITIAL SUDOKU PUZZLE ({puzzle_name.upper()}):")
     print("=" * 40)
     puz.display()
     
