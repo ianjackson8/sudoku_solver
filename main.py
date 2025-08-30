@@ -5,7 +5,7 @@ This script solves a given Sudoku puzzle
 
 Author: Ian Jackson
 Date 08-27-2025
-Version 0.1
+Version 0.2
 '''
 
 #== Imports ==#
@@ -47,6 +47,14 @@ Puzzle file format:
         '-i', '--input',
         type=str,
         help='Input puzzle file (e.g., easy_000.txt). If only filename is provided, looks in puzzles/ directory.'
+    )
+    
+    parser.add_argument(
+        '-m', '--method',
+        type=str,
+        choices=['elimination', 'random', 'elimination_plus', 'elimination_pro'],
+        default='elimination',
+        help='Solving method to use (default: elimination)'
     )
     
     return parser
@@ -147,7 +155,7 @@ def main():
 
     # solve the puzzle with timing
     start_time = time.time()
-    sol = solver.Solver(puz)
+    sol = solver.Solver(puz, method=args.method)
     sol.solve()
     end_time = time.time()
     solve_time = end_time - start_time
